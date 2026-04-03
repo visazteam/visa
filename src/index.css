@@ -1,3 +1,11 @@
+/* ===== Visa Z — متغيرات الألوان ===== */
+:root {
+  --color-dark:  #152a38;  /* Primary BG   — Dark Navy   */
+  --color-mid:   #29435c;  /* Cards/Header — Medium Navy */
+  --color-green: #556e53;  /* Accent/CTA   — Sage Green  */
+  --color-beige: #d1d4c9;  /* Text/Input   — Light Beige */
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -12,9 +20,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* تمرير أفقي بدون شريط تمرير */
+::-webkit-scrollbar { width: 0; height: 0; }
+
 input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  opacity: 0.6;
+  opacity: 0.5;
+  filter: invert(0.8);
 }
 
 html {
