@@ -40,8 +40,8 @@ function calcProgress(steps) {
 }
 
 // ===== المكوّن الرئيسي =====
-export default function TrackVisa({ onNavigate }) {
-  const [query,   setQuery]   = useState("");
+export default function TrackVisa({ onNavigate, initialCode = "" }) {
+  const [query,   setQuery]   = useState(initialCode);
   const [result,  setResult]  = useState(null);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
