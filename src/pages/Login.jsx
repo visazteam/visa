@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { login } from "../api/authApi";
 
 // ===== ثوابت الألوان — نفس النمط الأزرق =====
 const C = {
@@ -15,24 +16,24 @@ const C = {
   redBorder:    "#fca5a5",
 };
 
-// ===== بيانات الدخول التجريبية =====
-const MOCK_USERS = {
-  "user@visa.iq":  { password: "123456", role: "مستخدم" },
-  "agent@visa.iq": { password: "123456", role: "وكيل"   },
-  "admin@visa.iq": { password: "123456", role: "إدارة"  },
-};
-
 // ===== الأدوار المتاحة =====
 const ROLES = ["مستخدم", "وكيل", "إدارة"];
 
+// ===== بيانات تجريبية للتلميح فقط =====
+const DEMO_HINTS = [
+  { email: "user@visa.iq",  password: "123456", role: "مستخدم" },
+  { email: "agent@visa.iq", password: "123456", role: "وكيل"   },
+  { email: "admin@visa.iq", password: "123456", role: "إدارة"  },
+];
+
 // ===== المكوّن الرئيسي =====
 export default function Login({ onLogin }) {
-  const [role,        setRole]        = useState("مستخدم");
-  const [email,       setEmail]       = useState("");
-  const [password,    setPassword]    = useState("");
-  const [showPass,    setShowPass]    = useState(false);
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState("");
+  const [role,     setRole]     = useState("مستخدم");
+  const [email,    setEmail]    = useState("");
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState("");
 
   // ===== التحقق من صحة المدخلات =====
   function validate() {
@@ -54,18 +55,23 @@ export default function Login({ onLogin }) {
     if (!validate()) return;
 
     setLoading(true);
-    // محاكاة استدعاء API
-    await new Promise((res) => setTimeout(res, 1500));
-    setLoading(false);
+    try {
+      // authApi.login يتعامل مع Fallback والـ Backend الحقيقي تلقائياً
+      const data = await login(email, password);
 
-    const user = MOCK_USERS[email.toLowerCase()];
-    if (!user || user.password !== password || user.role !== role) {
-      setError("البريد أو كلمة المرور غير صحيحة ❌");
-      return;
+      // التحقق من تطابق الدور المختار مع الحساب
+      if (data.role !== role) {
+        setError(`هذا الحساب مسجل كـ "${data.role}" وليس "${role}"`);
+        return;
+      }
+
+      // نجاح — تمرير الدور للـ App
+      onLogin(data.role);
+    } catch (err) {
+      setError(err.message || "البريد أو كلمة المرور غير صحيحة ❌");
+    } finally {
+      setLoading(false);
     }
-
-    // نجاح الدخول — تمرير الدور للـ App
-    onLogin(role);
   }
 
   return (
@@ -126,7 +132,7 @@ export default function Login({ onLogin }) {
               اختر نوع حسابك
             </p>
             <div style={{
-              display: "flex", gap: "8px",
+              display: "flex", gap: "0",
               backgroundColor: C.bg,
               borderRadius: "10px",
               padding: "4px",
@@ -212,10 +218,8 @@ export default function Login({ onLogin }) {
                     transform: "translateY(-50%)",
                     background: "none", border: "none",
                     cursor: "pointer", fontSize: "16px",
-                    color: C.muted, padding: "0",
-                    lineHeight: 1,
+                    color: C.muted, padding: "0", lineHeight: 1,
                   }}
-                  title={showPass ? "إخفاء" : "إظهار"}
                 >
                   {showPass ? "🙈" : "👁"}
                 </button>
@@ -230,8 +234,7 @@ export default function Login({ onLogin }) {
                   background: "none", border: "none",
                   color: C.primary, fontSize: "12px",
                   fontWeight: "600", cursor: "pointer",
-                  fontFamily: "'Cairo',sans-serif",
-                  padding: 0,
+                  fontFamily: "'Cairo',sans-serif", padding: 0,
                 }}
               >
                 نسيت كلمة المرور؟
@@ -276,27 +279,44 @@ export default function Login({ onLogin }) {
             border: "1px solid " + C.border,
             borderRadius: "10px", padding: "12px 14px",
           }}>
-            <p style={{ fontSize: "11px", fontWeight: "700", color: C.primary, margin: "0 0 6px" }}>
-              💡 بيانات تجريبية
+            <p style={{ fontSize: "11px", fontWeight: "700", color: C.primary, margin: "0 0 8px" }}>
+              💡 اضغط لتعبئة تلقائي
             </p>
-            {Object.entries(MOCK_USERS).map(([em, u]) => (
-              <button
-                key={em}
-                type="button"
-                onClick={() => { setEmail(em); setPassword(u.password); setRole(u.role); setError(""); }}
-                style={{
-                  display: "block", width: "100%",
-                  background: "none", border: "none",
-                  textAlign: "right", cursor: "pointer",
-                  padding: "3px 0", fontFamily: "'Cairo',sans-serif",
-                }}
-              >
-                <span style={{ fontSize: "11px", color: C.muted }}>
-                  {em} — {u.role}
-                </span>
-              </button>
-            ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              {DEMO_HINTS.map((h) => (
+                <button
+                  key={h.email}
+                  type="button"
+                  onClick={() => {
+                    setEmail(h.email);
+                    setPassword(h.password);
+                    setRole(h.role);
+                    setError("");
+                  }}
+                  style={{
+                    display: "flex", justifyContent: "space-between",
+                    alignItems: "center",
+                    background: "none", border: "none",
+                    textAlign: "right", cursor: "pointer",
+                    padding: "4px 0",
+                    fontFamily: "'Cairo',sans-serif",
+                    borderBottom: "1px solid " + C.border,
+                  }}
+                >
+                  <span style={{ fontSize: "11px", color: C.muted, direction: "ltr" }}>{h.email}</span>
+                  <span style={{
+                    fontSize: "10px", fontWeight: "700",
+                    color: C.primary,
+                    backgroundColor: C.primaryLight,
+                    padding: "2px 8px", borderRadius: "6px",
+                  }}>
+                    {h.role}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
+
         </div>
       </div>
     </div>
